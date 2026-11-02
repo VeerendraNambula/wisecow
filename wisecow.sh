@@ -1,46 +1,10 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-SRVPORT=4499
-RSPFILE=response
-
-rm -f $RSPFILE
-mkfifo $RSPFILE
-
-get_api() {
-	read line
-	echo $line
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+command -v python3 >/dev/null 2>&1 || {
+  echo "Python 3 is required." >&2
+  exit 1
 }
 
-handleRequest() {
-    # 1) Process the request
-	get_api
-	mod=`fortune`
-
-cat <<EOF > $RSPFILE
-HTTP/1.1 200
-
-
-<pre>`cowsay $mod`</pre>
-EOF
-}
-
-prerequisites() {
-	command -v cowsay >/dev/null 2>&1 &&
-	command -v fortune >/dev/null 2>&1 || 
-		{ 
-			echo "Install prerequisites."
-			exit 1
-		}
-}
-
-main() {
-	prerequisites
-	echo "Wisdom served on port=$SRVPORT..."
-
-	while [ 1 ]; do
-		cat $RSPFILE | nc -lN $SRVPORT | handleRequest
-		sleep 0.01
-	done
-}
-
-main
+exec python3 "$SCRIPT_DIR/server.py"
